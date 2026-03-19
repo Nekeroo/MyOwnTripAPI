@@ -2,6 +2,10 @@ package main
 
 import (
 	"log"
+	"nekeroo/myowntrip/internal/moneyrates"
+	"nekeroo/myowntrip/internal/poi/clients"
+	"nekeroo/myowntrip/internal/poi/httppoi"
+	"nekeroo/myowntrip/internal/poi/service"
 	"net/http"
 	"time"
 
@@ -32,6 +36,21 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Recoverer)
 
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	moneyRatesService := moneyrates.NewService()
+	moneyRatesHandler := moneyrates.NewMoneyRatesHandler(*moneyRatesService)
+
+	userAgent := "my-go-api/1.0 (contact: dev@example.com)"
+
+	nominatimClient := clients.NewNominatimClient(userAgent)
+	overpassClient := clients.NewOverpassClient(userAgent)
+
+	poiService := service.New(nominatimClient, overpassClient)
+	poiHandler := httppoi.NewHandler(poiService)
+
+	r.Get("/rates", moneyRatesHandler.RetrieveLatestMoneyRates)
+
+	r.Post("/pois", poiHandler.SearchPOIs)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("API OK"))
