@@ -14,7 +14,7 @@ import (
 )
 
 type POIFetcher interface {
-	SearchPOIsInArea(ctx context.Context, areaName string, maxFetch int) ([]domain.POI, error)
+	SearchPOIsInPlace(ctx context.Context, place domain.Place, maxFetch int) ([]domain.POI, error)
 }
 
 type OverpassClient struct {
@@ -49,8 +49,14 @@ func NewOverpassClient(userAgent string) *OverpassClient {
 	}
 }
 
-func (c *OverpassClient) SearchPOIsInArea(ctx context.Context, areaName string, maxFetch int) ([]domain.POI, error) {
-	query := buildAreaQuery(areaName, maxFetch)
+func (c *OverpassClient) SearchPOIsInPlace(ctx context.Context, place domain.Place, maxFetch int) ([]domain.POI, error) {
+	query, err := buildPlaceQuery(place, maxFetch)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("overpass query:\n", query)
 
 	form := url.Values{}
 	form.Set("data", query)
@@ -74,6 +80,8 @@ func (c *OverpassClient) SearchPOIsInArea(ctx context.Context, areaName string, 
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	fmt.Println("res : ", res)
 
 	if res.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
@@ -106,21 +114,41 @@ func (c *OverpassClient) SearchPOIsInArea(ctx context.Context, areaName string, 
 	return pois, nil
 }
 
-func buildAreaQuery(areaName string, maxFetch int) string {
-	escaped := escapeOverpassString(areaName)
-
-	return fmt.Sprintf(`
+func buildPlaceQuery(place domain.Place, maxFetch int) (string, error) {
+	switch place.OSMType {
+	case "relation":
+		return fmt.Sprintf(`
 [out:json][timeout:25];
-area["name"="%s"]["boundary"="administrative"]->.a;
+rel(%d);
+map_to_area->.a;
 (
-  nwr(area.a)["tourism"];
-  nwr(area.a)["amenity"];
-  nwr(area.a)["shop"];
-  nwr(area.a)["leisure"];
-  nwr(area.a)["historic"];
+  nwr["tourism"](area.a);
+  nwr["amenity"](area.a);
+  nwr["shop"](area.a);
+  nwr["leisure"](area.a);
+  nwr["historic"](area.a);
 );
-out center tags %d;
-`, escaped, maxFetch)
+out center tags;
+`, place.OSMID), nil
+
+	case "way":
+		return fmt.Sprintf(`
+[out:json][timeout:25];
+way(%d);
+map_to_area->.a;
+(
+  nwr["tourism"](area.a);
+  nwr["amenity"](area.a);
+  nwr["shop"](area.a);
+  nwr["leisure"](area.a);
+  nwr["historic"](area.a);
+);
+out center tags;
+`, place.OSMID), nil
+
+	default:
+		return "", fmt.Errorf("unsupported osm_type for area search: %s", place.OSMType)
+	}
 }
 
 func coordinates(el overpassElement) (float64, float64) {

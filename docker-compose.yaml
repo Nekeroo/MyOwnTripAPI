@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+
+  frankfurter:
+    image: lineofflight/frankfurter
+    ports:
+      - "8082:8080"

@@ -45,9 +45,8 @@ func (s *Service) Search(ctx context.Context, req domain.SearchRequest) ([]domai
 		return nil, err
 	}
 
-	areaName := extractAreaName(req.City, place.DisplayName)
+	pois, err := s.POIFetcher.SearchPOIsInPlace(ctx, *place, MaxFetchedPOIs)
 
-	pois, err := s.POIFetcher.SearchPOIsInArea(ctx, areaName, MaxFetchedPOIs)
 	if err != nil {
 		return nil, err
 	}

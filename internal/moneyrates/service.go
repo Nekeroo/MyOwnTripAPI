@@ -21,7 +21,7 @@ type Service struct {
 
 func NewService() *Service {
 	return &Service{
-		urlFrankfurter: "https://api.frankfurter.dev/v1",
+		urlFrankfurter: "http://localhost:8082/v1",
 	}
 }
 
