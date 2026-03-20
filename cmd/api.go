@@ -50,7 +50,7 @@ func (app *application) mount() http.Handler {
 
 	r.Get("/rates", moneyRatesHandler.RetrieveLatestMoneyRates)
 
-	r.Post("/pois", poiHandler.SearchPOIs)
+	r.Get("/pois", poiHandler.SearchPOIs)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("API OK"))

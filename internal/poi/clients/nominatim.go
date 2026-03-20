@@ -42,7 +42,7 @@ func (c *NominatimClient) SearchPlace(ctx context.Context, city, countryCode str
 	params := url.Values{}
 	params.Set("format", "jsonv2")
 	params.Set("limit", "1")
-	params.Set("email", "dev@tondomaine.com")
+	params.Set("email", "m.grattardpro@gmail.com")
 
 	if city != "" {
 		params.Set("city", city)
