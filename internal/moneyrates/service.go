@@ -15,34 +15,49 @@ type MoneyRates struct {
 	Rates  map[string]float64 `json:"rates"`
 }
 
+type ConvertedRate struct {
+	Amount float64 `json:"amount"`
+	Base   string  `json:"base"`
+	To     string  `json:"to"`
+}
+
 type Service struct {
 	urlFrankfurter string
 }
 
 func NewService() *Service {
 	return &Service{
-		urlFrankfurter: "http://localhost:8082/v1",
+		urlFrankfurter: "https://api.frankfurter.dev/v1",
 	}
 }
 
-func (s *Service) retrieveLatestRates() (MoneyRates, error) {
-	res, err := http.Get(s.urlFrankfurter + "/latest")
+func (s *Service) convertRate(from string, to string, amount float64) (ConvertedRate, error) {
+	res, err := http.Get(s.urlFrankfurter + "/latest?base=" + from + "&symbols=" + to)
+
 	if err != nil {
-		return MoneyRates{}, fmt.Errorf("error calling Frankfurter API: %w", err)
+		return ConvertedRate{}, fmt.Errorf("Error calling Frankfurter API : %w", err)
 	}
+
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
+
 	if err != nil {
-		return MoneyRates{}, fmt.Errorf("failed to read response body: %w", err)
+		return ConvertedRate{}, fmt.Errorf("Failed to read response : %w", err)
 	}
 
 	log.Println(string(body))
 
 	var rates MoneyRates
 	if err := json.Unmarshal(body, &rates); err != nil {
-		return MoneyRates{}, fmt.Errorf("failed to parse JSON: %w", err)
+		return ConvertedRate{}, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
-	return rates, nil
+	result := ConvertedRate{
+		(amount * rates.Rates[to]),
+		from,
+		to,
+	}
+
+	return result, nil
 }

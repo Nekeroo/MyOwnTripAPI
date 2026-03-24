@@ -48,10 +48,19 @@ func (app *application) mount() http.Handler {
 	poiService := service.New(nominatimClient, overpassClient)
 	poiHandler := httppoi.NewHandler(poiService)
 
-	r.Get("/rates", moneyRatesHandler.RetrieveLatestMoneyRates)
+	/*
+		Routes pour la page conversion de monnaie
+	*/
+	r.Post("/convert", moneyRatesHandler.ConvertRequestedAmount)
 
+	/*
+		Routes pour récupérer les Point d'intérêts
+	*/
 	r.Get("/pois", poiHandler.SearchPOIs)
 
+	/*
+		Routes interne à l'API
+	*/
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("API OK"))
 	})

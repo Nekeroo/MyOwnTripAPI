@@ -1,8 +1,7 @@
 package moneyrates
 
 import (
-	"log"
-	"nekeroo/myowntrip/internal/json"
+	"encoding/json"
 	"net/http"
 )
 
@@ -17,15 +16,22 @@ func NewMoneyRatesHandler(service Service) *MoneyRatesHandler {
 	}
 }
 
-// Méthode appelée lorsqu'on veut récupérer le cours actuel de l'euro à l'étranger
-func (h *MoneyRatesHandler) RetrieveLatestMoneyRates(w http.ResponseWriter, r *http.Request) {
-	moneyRates, err := h.service.retrieveLatestRates()
+func (h *MoneyRatesHandler) ConvertRequestedAmount(w http.ResponseWriter, r *http.Request) {
+
+	var convertedRate ConvertedRate
+
+	err := json.NewDecoder(r.Body).Decode(&convertedRate)
 
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	json.Write(w, http.StatusOK, moneyRates)
+	result, err := h.service.convertRate(convertedRate.Base, convertedRate.To, convertedRate.Amount)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	json.NewEncoder(w).Encode(result)
 }
