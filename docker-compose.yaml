@@ -8,3 +8,14 @@ services:
     image: lineofflight/frankfurter
     ports:
       - "8082:8080"
+
+  database:
+    image: postgres:18.3
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
